@@ -29,7 +29,7 @@ public class ParticipantController {
     private final Random random = new Random();
 
     @PostMapping("/register")
-    public String registerParticipant(@ModelAttribute Participant participant) {
+    public String registerParticipant(@ModelAttribute Participant participant, Model model) {
         // Find an unused random position
         Set<Integer> usedPositions = participantRepository.findAll().stream()
             .map(Participant::getLedPosition)
@@ -48,11 +48,14 @@ public class ParticipantController {
 
         participant.setLedPosition(position);
         participantRepository.save(participant);
-        return "redirect:/success";
+        model.addAttribute("selectedColor", participant.getFavoriteColor());
+        return "success";
     }
 
     @GetMapping("/success")
-    public String showSuccess() {
+    public String showSuccess(Model model) {
+        // Default color in case someone accesses /success directly
+        model.addAttribute("selectedColor", "#4CAF50");
         return "success";
     }
 

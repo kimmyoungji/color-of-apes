@@ -4,63 +4,207 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Color Registration</title>
+
     <style>
         body {
-            font-family: Arial, sans-serif;
-            max-width: 600px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 500px;
             margin: 0 auto;
             padding: 20px;
-            background-color: #f5f5f5;
+            background-color: #000000;
         }
         .form-container {
-            background-color: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            border: 1px solid #333;
+            position: relative;
+            transition: background-color 0.1s ease;
         }
         .form-group {
-            margin-bottom: 15px;
+            margin-bottom: 25px;
+        }
+        h2 {
+            font-size: 1.6rem;
+            text-align: center;
+            margin-bottom: 25px;
+            font-weight: 600;
+            color: #ffffff;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
         }
         label {
             display: block;
-            margin-bottom: 5px;
-            font-weight: bold;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #ffffff;
         }
-        input[type="text"], input[type="color"] {
+        input[type="text"] {
             width: 100%;
-            padding: 8px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
+            padding: 12px;
+            border: 1px solid #333;
+            border-radius: 8px;
             box-sizing: border-box;
+            font-size: 16px;
+            background-color: #2a2a2a;
+            color: #ffffff;
+            transition: all 0.3s;
         }
-        button {
-            background-color: #4CAF50;
+        input[type="text"]:focus {
+            border-color: #666;
+            outline: none;
+            box-shadow: 0 0 5px rgba(255,255,255,0.1);
+        }
+        .color-preview {
+            width: 100%;
+            height: 100px;
+            border-radius: 8px;
+            margin: 10px 0;
+            transition: background-color 0.3s;
+        }
+        .color-info {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+        .color-palette {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
+            gap: 10px;
+            margin: 15px 0;
+        }
+        .palette-color {
+            width: 100%;
+            padding-bottom: 100%;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .palette-color:hover {
+            transform: scale(1.1);
+        }
+        .submit-btn {
+            background-color: #333;
             color: white;
-            padding: 10px 20px;
-            border: none;
-            border-radius: 4px;
+            padding: 15px 30px;
+            border: 1px solid #444;
+            border-radius: 8px;
             cursor: pointer;
             width: 100%;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s;
         }
-        button:hover {
-            background-color: #45a049;
+        .submit-btn:hover {
+            background-color: #444;
+            border-color: #666;
+            transform: translateY(-1px);
+        }
+        .view-participants {
+            display: block;
+            color: #333;
+            text-decoration: none;
+            transition: all 0.2s ease;
+            width: fit-content;
+            margin: 10px auto 10px
+        }
+        #color-picker {
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .IroWheel {
+            border: 2px solid #000;
+            border-radius: 50%;
+            box-shadow: 0 0 10px rgba(0,0,0,0.5);
+        }
+        .IroSlider {
+            border: 2px solid #000;
+            border-radius: 6px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.5);
         }
     </style>
 </head>
 <body>
     <div class="form-container">
-        <h2>Register Your Favorite Color</h2>
+        <h2>What color are you?</h2>
         <form th:action="@{/register}" th:object="${participant}" method="post">
             <div class="form-group">
-                <label for="name">Your Name:</label>
-                <input type="text" id="name" th:field="*{name}" required>
+                <input type="text" id="name" th:field="*{name}" required placeholder="Your Name">
             </div>
+            
             <div class="form-group">
-                <label for="favoriteColor">Your Favorite Color:</label>
-                <input type="color" id="favoriteColor" th:field="*{favoriteColor}" required>
+                <input type="hidden" id="favoriteColor" th:field="*{favoriteColor}" required>
+                <div id="color-picker"></div>
             </div>
-            <button type="submit">Register</button>
+            
+            <button type="submit" class="submit-btn">Register Color</button>
+            <a href="/participants" class="view-participants">View colors of apes</a>
         </form>
     </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@jaames/iro@5"></script>
+    <script>
+        // Initialize iro color picker
+        window.addEventListener('DOMContentLoaded', () => {
+            const colorPicker = new iro.ColorPicker('#color-picker', {
+                width: 250,
+                color: '#ffffff',
+                layout: [
+                    { 
+                        component: iro.ui.Wheel,
+                    },
+                    {
+                        component: iro.ui.Slider,
+                        options: {
+                            sliderType: 'value',
+                            sliderSize: 30
+                        }
+                    }
+                ]
+            });
+
+            // Set initial color value
+            document.getElementById('favoriteColor').value = colorPicker.color.hexString;
+            document.querySelector('.form-container').style.backgroundColor = colorPicker.color.hexString;
+
+            // Function to get complementary color
+            function getComplementaryColor(color) {
+                const rgb = color.rgb;
+                return {
+                    r: 255 - rgb.r,
+                    g: 255 - rgb.g,
+                    b: 255 - rgb.b
+                };
+            }
+
+            // Function to convert RGB to hex
+            function rgbToHex(r, g, b) {
+                return '#' + [r, g, b].map(x => {
+                    const hex = x.toString(16);
+                    return hex.length === 1 ? '0' + hex : hex;
+                }).join('');
+            }
+
+            // Update color values and background when the color is changed
+            colorPicker.on('color:change', function(color) {
+                document.getElementById('favoriteColor').value = color.hexString;
+                document.querySelector('.form-container').style.backgroundColor = color.hexString;
+                
+                // Update title color to complementary color
+                const complementary = getComplementaryColor(color);
+                const titleColor = rgbToHex(complementary.r, complementary.g, complementary.b);
+                document.querySelector('h2').style.color = titleColor;
+            });
+
+            // Set initial complementary color for title
+            const initialComplementary = getComplementaryColor(colorPicker.color);
+            const initialTitleColor = rgbToHex(initialComplementary.r, initialComplementary.g, initialComplementary.b);
+            document.querySelector('h2').style.color = initialTitleColor;
+        });
+    </script>
 </body>
 </html>
