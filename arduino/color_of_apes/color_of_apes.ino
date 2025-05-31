@@ -1,7 +1,7 @@
-#include <WiFiS3.h>            // Uno R4 WiFi용
-#include <FastLED.h>
+#include <WiFiS3.h>
 #include <ArduinoHttpClient.h>
-#include <Arduino_JSON.h>      // JSON 파싱용
+#include <FastLED.h>
+#include <Arduino_JSON.h>
 
 #define LED_PIN     5
 #define NUM_LEDS    64
@@ -11,22 +11,28 @@
 
 CRGB leds[NUM_LEDS];
 
+// WiFi credentials
 const char* ssid = "kmjoyitwifi";
 const char* password = "kmjoyit21045";
 
-// Spring Boot 서버 정보
-const char serverAddress[] = "192.168.50.148";  // PC의 IP 주소 (localhost 아님!)
-int port = 8082;
-const char requestPath[] = "/api/arduino/colors";
+// Render deployment info
+const char* host = "color-of-apes.onrender.com";
+const int port = 443;
 
 WiFiClient wifi;
-HttpClient client = HttpClient(wifi, serverAddress, port);
+HttpClient client = HttpClient(wifi, host, port);
+char response[2048];  // Buffer for HTTP response
 
 void setup() {
   Serial.begin(9600);
-  delay(1000);
+  while (!Serial) {
+    ; // Wait for serial port to connect
+  }
+  Serial.println("Arduino board initialized");
+  
   FastLED.addLeds<CHIPSET, LED_PIN, COLOR_ORDER>(leds, NUM_LEDS);
   FastLED.setBrightness(BRIGHTNESS);
+  
   connectToWiFi();
 }
 
@@ -47,47 +53,82 @@ void connectToWiFi() {
 }
 
 void getColorDataFromServer() {
-  client.get(requestPath);
-
+  Serial.println("\nStarting connection to server...");
+  
+  Serial.println("Making HTTP GET request to /api/arduino/colors");
+  client.get("/api/arduino/colors");
+  
   int statusCode = client.responseStatusCode();
   String response = client.responseBody();
-
+  
+  Serial.print("Status code: ");
+  Serial.println(statusCode);
+  
   if (statusCode == 200) {
-    Serial.println("Received: " + response);
+    Serial.println("Response: " + response);
     parseAndDisplay(response);
   } else {
     Serial.print("HTTP Error: ");
     Serial.println(statusCode);
+    fill_solid(leds, NUM_LEDS, CRGB::Black);
+    FastLED.show();
   }
+}
+}
 }
 
 void parseAndDisplay(String jsonStr) {
+  Serial.println("Parsing JSON: " + jsonStr);
+  
   JSONVar data = JSON.parse(jsonStr);
-
-  Serial.println("JSON parsed: ");
-  Serial.println(data);
-
+  
   if (JSON.typeof(data) == "undefined") {
     Serial.println("Failed to parse JSON");
     return;
   }
-
-  fill_solid(leds, NUM_LEDS, CRGB::Black); // 초기화
-
+  
+  Serial.println("JSON parsed successfully");
+  Serial.print("Number of colors: ");
+  Serial.println(data.length());
+  
+  fill_solid(leds, NUM_LEDS, CRGB::Black); // Clear all LEDs
+  
   for (int i = 0; i < data.length(); i++) {
+    Serial.print("Processing color ");
+    Serial.println(i);
+    
     int x = (int)data[i]["x"];
     int y = (int)data[i]["y"];
     int r = (int)data[i]["r"];
     int g = (int)data[i]["g"];
     int b = (int)data[i]["b"];
-
+    
+    Serial.print("Position (x,y): (");
+    Serial.print(x);
+    Serial.print(",");
+    Serial.print(y);
+    Serial.println(")");
+    
+    Serial.print("Color (r,g,b): (");
+    Serial.print(r);
+    Serial.print(",");
+    Serial.print(g);
+    Serial.print(",");
+    Serial.print(b);
+    Serial.println(")");
+    
     if (x >= 0 && x < 8 && y >= 0 && y < 8) {
       int idx = xyToIndex(x, y);
+      Serial.print("LED index: ");
+      Serial.println(idx);
       leds[idx] = CRGB(r, g, b);
+    } else {
+      Serial.println("Position out of bounds");
     }
   }
-
+  
   FastLED.show();
+  Serial.println("LEDs updated");
 }
 
 int xyToIndex(int x, int y) {
